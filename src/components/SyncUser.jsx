@@ -10,8 +10,9 @@ export default function SyncUser() {
 
     const sync = async () => {
       try {
-        await axios.post("http://localhost:5001/api/users/sync", {
-          clerkId: user.id,
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/users/sync`,
+          {          clerkId: user.id,
           fullName: user.fullName || user.firstName || "",
           email: user.primaryEmailAddress?.emailAddress || "",
           image: user.imageUrl || "",
