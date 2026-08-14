@@ -25,6 +25,7 @@ app.use(
     origin: [
       "https://ai-resume-analyzer-psi-bay.vercel.app",
       "https://ai-resume-analyzer-git-main-nikshitsondagar078-8288s-projects.vercel.app",
+      "http://localhost:8081",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
