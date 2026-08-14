@@ -20,7 +20,20 @@ connectDB();
 // =======================
 // Middleware
 // =======================
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://ai-resume-analyzer-psi-bay.vercel.app",
+      "https://ai-resume-analyzer-git-main-nikshitsondagar078-8288s-projects.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+app.options("*", cors());
+
 app.use(express.json());
 
 // =======================
