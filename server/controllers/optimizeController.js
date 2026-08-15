@@ -1116,43 +1116,141 @@ IMPORTANT TRUTHFULNESS RULES:
 
 14. Missing skills may be recommended separately.
 
-15. Improve wording, grammar, structure, readability, ATS compatibility, and professional presentation.
+15. Improve wording, grammar, clarity, structure, readability, ATS compatibility, and professional presentation.
 
-16. Preserve all important factual information.
+16. Preserve every important factual detail from the original resume.
 
-17. Do not remove genuine projects, education, skills, or achievements.
+17. NEVER remove a genuine project, education entry, experience entry, skill, certification, achievement, link, or contact detail.
 
-18. Use strong action verbs where appropriate.
+18. NEVER remove or weaken an existing technical skill merely to rewrite the resume.
 
-19. Do not keyword-stuff.
+19. Preserve the original section headings whenever possible, especially:
+    Professional Summary
+    Experience
+    Projects
+    Education
+    Skills
+    Technical Skills
+    Certifications
 
-20. Do not repeat keywords unnaturally.
+20. Preserve every technical keyword that already exists in the original resume.
+    If the original resume contains a technology such as JavaScript, TypeScript,
+    Next.js, Express.js, Tailwind CSS, Python, PostgreSQL, MongoDB, or any other
+    demonstrated technology, the optimized resume MUST still contain that
+    technology or an equivalent recognized alias.
 
-21. Do not change the candidate's identity or contact information.
+21. Do not replace an existing technical keyword with a vague synonym.
+    For example, do not replace "Next.js" with only "web framework".
+    Keep the actual technology name.
 
-22. Keep links and contact information factual.
+22. Do not remove keywords from project descriptions, experience descriptions,
+    or skills sections when rewriting those sections.
 
-23. If the original resume contains a skill, you may improve how that skill is presented.
+23. When improving wording, make the smallest necessary factual-preserving changes.
+    Prefer improving an existing sentence over completely rewriting or deleting it.
 
-24. If the original resume does not contain a skill, do not present it as an existing skill.
+24. Use strong action verbs where appropriate, but do not invent achievements,
+    responsibilities, metrics, technologies, companies, projects, certifications,
+    dates, or experience.
 
-25. The optimized resume must remain truthful even if this means some job-description keywords remain missing.
+25. Do not keyword-stuff. Every technical keyword must remain natural and truthful.
+
+26. The optimized resume must preserve all contact information exactly.
+
+27. The optimized resume must preserve all important URLs and links exactly.
+
+28. The optimized resume must preserve the overall information density of the original.
+    Do not dramatically shorten the resume.
+
+29. The optimized resume should be at least as detailed as the original resume.
+    Do not remove meaningful content just to make the resume shorter.
+
+30. Preserve the original technical skills section and improve its organization
+    only when doing so does not remove any existing skill.
+
+31. Preserve the original project names and the technologies used in each project.
+    You may rewrite the descriptions for clarity and stronger action verbs.
+
+32. Preserve the original education information and dates.
+
+33. Preserve the original experience information and dates.
+
+34. If a job-description keyword is already demonstrated by the original resume,
+    naturally strengthen its placement in the relevant existing section.
+
+35. If a job-description keyword is NOT demonstrated by the original resume,
+    do not add it as an existing skill or experience.
+
+36. Missing skills may be returned only in recommendedSkillsToLearn.
+
+37. The optimized resume must be ATS-friendly without sacrificing factual accuracy.
+
+38. The optimized resume must NOT intentionally reduce the ATS score or Job Match score.
+
+39. Before returning the optimized resume, internally compare it against the
+    original resume and verify that all existing technical skills, projects,
+    experience, education, and important factual information are still present.
+
+40. If unsure whether a rewrite could remove or weaken factual information,
+    preserve the original wording instead of changing it.
+
+41. The goal is NOT to maximize the numerical score at any cost.
+    The goal is to produce a genuinely improved resume while preserving or
+    improving the original ATS and Job Match performance.
+
+42. Prefer additive improvements over destructive rewrites.
+    Add clarity, stronger wording, better structure, and better presentation
+    while keeping the original evidence intact.
+
+43. Never fabricate content merely to increase ATS score.
+
+44. The final optimized resume must remain truthful even if some job-description
+    keywords remain missing.
 
 OPTIMIZATION GOALS:
 
-- Improve ATS readability.
-- Improve section organization.
-- Improve professional summary.
-- Improve project descriptions.
-- Improve action verbs.
-- Improve keyword relevance where truthful.
-- Improve consistency.
-- Improve grammar.
-- Improve clarity.
+- Preserve all existing technical keywords.
+- Preserve all existing projects, experience, education, skills, and achievements.
+- Preserve the original information density.
+- Improve ATS readability without removing content.
+- Improve section organization without removing section information.
+- Improve the professional summary while preserving factual claims.
+- Improve project descriptions using stronger action verbs.
+- Improve experience descriptions using stronger action verbs.
+- Improve grammar and sentence clarity.
+- Improve consistency and formatting.
 - Improve recruiter readability.
-- Preserve factual information.
+- Naturally emphasize technologies that are already demonstrated.
+- Naturally improve keyword relevance where truthful.
+- Preserve all factual information.
+- Prefer additive improvements instead of destructive rewriting.
+- Preserve or improve the original ATS score.
+- Preserve or improve the original Job Match score.
 
 OUTPUT REQUIREMENTS:
+
+FINAL QUALITY CHECK:
+
+Before returning the JSON, compare the optimized resume against the original resume.
+
+Verify that:
+
+1. Every existing technical skill is still present.
+2. Every existing project is still present.
+3. Every experience entry is still present.
+4. Education is still present.
+5. Important achievements are still present.
+6. Contact information is unchanged.
+7. Important URLs are unchanged.
+8. Existing job-relevant keywords were not accidentally removed.
+9. Section headings remain ATS-readable.
+10. The resume was improved through wording, clarity, structure, and presentation,
+    not by deleting useful content.
+
+If an intended optimization would risk removing useful factual content,
+keep the original content instead.
+
+Return the complete optimized resume, not a summary of changes.
 
 Return ONLY JSON.
 
