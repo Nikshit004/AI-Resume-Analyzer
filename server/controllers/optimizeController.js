@@ -124,56 +124,91 @@ function normalizeRecommendedSkills(skills = []) {
 }
 
 // ======================================================
-// TECHNOLOGY KEYWORDS
+// TECHNOLOGY KEYWORD GROUPS
+// ======================================================
+// IMPORTANT FIX:
+//
+// Previously, alias variants of the same technology
+// (e.g. "react" and "react.js") were stored as separate
+// entries in a flat COMMON_TECH_KEYWORDS array. That meant
+// a single technology could be extracted from the job
+// description as TWO separate "keywords", inflating the
+// denominator used for keyword scoring and allowing the
+// same underlying skill to be counted more than once.
+//
+// Each group below represents ONE underlying skill. All
+// alias variants live inside the same group and are never
+// treated as separate keywords again.
+//
+// COMMON_TECH_KEYWORDS (flat list) is still exported/used
+// wherever the rest of the file expects a flat list, but it
+// is now derived from the groups so it stays in sync.
 // ======================================================
 
-const COMMON_TECH_KEYWORDS = [
-  "html",
-  "html5",
-  "css",
-  "css3",
-  "javascript",
-  "typescript",
-  "react",
-  "react.js",
-  "next.js",
-  "vue",
-  "angular",
-  "node.js",
-  "node",
-  "express",
-  "express.js",
-  "mongodb",
-  "mysql",
-  "sql",
-  "postgresql",
-  "java",
-  "python",
-  "c",
-  "c++",
-  "php",
-  "git",
-  "github",
-  "rest api",
-  "rest",
-  "api",
-  "bootstrap",
-  "tailwind",
-  "tailwind css",
-  "redux",
-  "figma",
-  "responsive design",
-  "responsive web design",
-  "docker",
-  "aws",
-  "firebase",
-  "vercel",
-  "npm",
-  "vite",
-  "webpack",
-  "json",
-  "ajax",
+const KEYWORD_GROUPS = [
+  { canonical: "HTML", aliases: ["html", "html5"] },
+  { canonical: "CSS", aliases: ["css", "css3"] },
+  { canonical: "JavaScript", aliases: ["javascript"] },
+  { canonical: "TypeScript", aliases: ["typescript"] },
+  { canonical: "React", aliases: ["react", "react.js"] },
+  { canonical: "Next.js", aliases: ["next.js"] },
+  { canonical: "Vue", aliases: ["vue"] },
+  { canonical: "Angular", aliases: ["angular"] },
+  { canonical: "Node.js", aliases: ["node.js", "node"] },
+  { canonical: "Express", aliases: ["express", "express.js"] },
+  { canonical: "MongoDB", aliases: ["mongodb"] },
+  { canonical: "MySQL", aliases: ["mysql"] },
+  { canonical: "SQL", aliases: ["sql"] },
+  { canonical: "PostgreSQL", aliases: ["postgresql"] },
+  { canonical: "Java", aliases: ["java"] },
+  { canonical: "Python", aliases: ["python"] },
+  { canonical: "C", aliases: ["c"] },
+  { canonical: "C++", aliases: ["c++"] },
+  { canonical: "PHP", aliases: ["php"] },
+  { canonical: "Git", aliases: ["git"] },
+  { canonical: "GitHub", aliases: ["github"] },
+  {
+    canonical: "REST APIs",
+    aliases: ["rest api", "rest apis", "rest", "api"],
+  },
+  { canonical: "Bootstrap", aliases: ["bootstrap"] },
+  {
+    canonical: "Tailwind CSS",
+    aliases: ["tailwind", "tailwind css"],
+  },
+  { canonical: "Redux", aliases: ["redux"] },
+  { canonical: "Figma", aliases: ["figma"] },
+  {
+    canonical: "Responsive Web Design",
+    aliases: ["responsive design", "responsive web design"],
+  },
+  { canonical: "Docker", aliases: ["docker"] },
+  { canonical: "AWS", aliases: ["aws"] },
+  { canonical: "Firebase", aliases: ["firebase"] },
+  { canonical: "Vercel", aliases: ["vercel"] },
+  { canonical: "npm", aliases: ["npm"] },
+  { canonical: "Vite", aliases: ["vite"] },
+  { canonical: "Webpack", aliases: ["webpack"] },
+  { canonical: "JSON", aliases: ["json"] },
+  { canonical: "AJAX", aliases: ["ajax"] },
 ];
+
+// Lookup: canonical name (lowercased) -> group
+const KEYWORD_GROUPS_BY_CANONICAL = new Map(
+  KEYWORD_GROUPS.map((group) => [
+    group.canonical.toLowerCase(),
+    group,
+  ])
+);
+
+// Flat list kept for backward compatibility with any code
+// (inside or outside this file) that expects a simple array
+// of raw keyword strings.
+const COMMON_TECH_KEYWORDS =
+  KEYWORD_GROUPS.reduce(
+    (all, group) => all.concat(group.aliases),
+    []
+  );
 
 // ======================================================
 // TERMS THAT ARE NOT TECHNICAL SKILLS
@@ -268,7 +303,29 @@ function containsKeyword(
 }
 
 // ======================================================
+// GROUP HELPER
+//
+// Returns true if ANY alias belonging to a keyword group
+// is present in the given text.
+// ======================================================
+
+function textContainsGroup(
+  text,
+  group
+) {
+  return group.aliases.some(
+    (alias) =>
+      containsKeyword(text, alias)
+  );
+}
+
+// ======================================================
 // GET TECHNICAL JOB KEYWORDS
+//
+// FIX: iterates over keyword GROUPS (not raw aliases) so
+// that each underlying technology is only ever extracted
+// ONCE, no matter how many alias variants appear in the
+// job description.
 // ======================================================
 
 function extractJobKeywords(
@@ -277,15 +334,15 @@ function extractJobKeywords(
   const found = [];
 
   for (
-    const keyword of COMMON_TECH_KEYWORDS
+    const group of KEYWORD_GROUPS
   ) {
     if (
-      containsKeyword(
+      textContainsGroup(
         jobDescription,
-        keyword
+        group
       )
     ) {
-      found.push(keyword);
+      found.push(group.canonical);
     }
   }
 
@@ -296,6 +353,11 @@ function extractJobKeywords(
 
 // ======================================================
 // FIND MATCHED KEYWORDS
+//
+// jobKeywords is now a list of CANONICAL skill names
+// (produced by extractJobKeywords). For each canonical
+// skill, the resume matches it if the resume contains
+// ANY alias belonging to that skill's group.
 // ======================================================
 
 function getMatchedKeywords(
@@ -303,11 +365,27 @@ function getMatchedKeywords(
   jobKeywords
 ) {
   return jobKeywords.filter(
-    (keyword) =>
-      containsKeyword(
+    (keyword) => {
+      const group =
+        KEYWORD_GROUPS_BY_CANONICAL.get(
+          String(keyword)
+            .toLowerCase()
+        );
+
+      if (!group) {
+        // Fallback for any raw (non-canonical) keyword
+        // that might still be passed in from elsewhere.
+        return containsKeyword(
+          resumeText,
+          keyword
+        );
+      }
+
+      return textContainsGroup(
         resumeText,
-        keyword
-      )
+        group
+      );
+    }
   );
 }
 
@@ -562,22 +640,47 @@ function calculateJobMatch(
 
 // ======================================================
 // GET SKILLS SUPPORTED BY ORIGINAL RESUME
+//
+// FIX: now returns CANONICAL skill names (one per group)
+// instead of raw alias strings, so this list can be
+// compared apples-to-apples against extractJobKeywords().
 // ======================================================
 
 function getSupportedSkills(
   resumeText
 ) {
-  return COMMON_TECH_KEYWORDS.filter(
-    (keyword) =>
-      containsKeyword(
+  const found = [];
+
+  for (
+    const group of KEYWORD_GROUPS
+  ) {
+    if (
+      textContainsGroup(
         resumeText,
-        keyword
+        group
       )
-  );
+    ) {
+      found.push(group.canonical);
+    }
+  }
+
+  return [
+    ...new Set(found),
+  ];
 }
 
 // ======================================================
 // REMOVE UNSUPPORTED TECH SKILLS
+//
+// FIX: unsupportedJobSkills is now computed by comparing
+// CANONICAL skill names (both originalSkills and
+// jobKeywords come from the same grouped extraction), so
+// "React" vs "React.js" no longer causes a false mismatch.
+//
+// When stripping an unsupported skill out of the optimized
+// text, every alias variant of that skill is removed (not
+// just the canonical label), since the AI-written text may
+// use any alias.
 // ======================================================
 
 function removeUnsupportedSkills(
@@ -621,25 +724,40 @@ function removeUnsupportedSkills(
   /*
    * Remove unsupported technical
    * skills from optimized resume.
+   *
+   * Each unsupported skill is canonical, so we remove
+   * every alias variant that could appear in the
+   * AI-generated text.
    */
 
   for (
     const skill of unsupportedJobSkills
   ) {
-    const escaped =
-      escapeRegex(skill);
-
-    const regex =
-      new RegExp(
-        `\\b${escaped}\\b`,
-        "gi"
+    const group =
+      KEYWORD_GROUPS_BY_CANONICAL.get(
+        String(skill).toLowerCase()
       );
 
-    cleaned =
-      cleaned.replace(
-        regex,
-        ""
-      );
+    const variants = group
+      ? group.aliases
+      : [skill];
+
+    for (const variant of variants) {
+      const escaped =
+        escapeRegex(variant);
+
+      const regex =
+        new RegExp(
+          `\\b${escaped}\\b`,
+          "gi"
+        );
+
+      cleaned =
+        cleaned.replace(
+          regex,
+          ""
+        );
+    }
   }
 
   // Clean formatting damage
@@ -923,9 +1041,9 @@ const optimizeResume = async (
     // ==================================================
     // ORIGINAL OBJECTIVE METRICS
     //
-    // These are used only as reference information.
-    // They are NOT allowed to overwrite
-    // originalATS/originalJobMatch.
+    // These are used as reference information, AND as the
+    // fallback result set if the optimized resume ever
+    // fails the non-degradation check below.
     // ==================================================
 
     const originalATSResult =
@@ -1234,32 +1352,32 @@ for the same underlying skill.
     // resume text.
     // ==================================================
 
-    const optimizedATSResult =
+    let optimizedATSResult =
       calculateATSScore(
         optimizedResumeText,
         jobDescription
       );
 
-    const optimizedATS =
+    let optimizedATS =
       optimizedATSResult.score;
 
     // ==================================================
     // RE-CALCULATE OPTIMIZED JOB MATCH
     // ==================================================
 
-    const optimizedJobMatch =
+    let optimizedJobMatch =
       calculateJobMatch(
         optimizedResumeText,
         jobDescription
       );
 
     console.log(
-      "📊 Optimized ATS:",
+      "📊 Optimized ATS (pre-guard):",
       optimizedATS
     );
 
     console.log(
-      "🎯 Optimized Job Match:",
+      "🎯 Optimized Job Match (pre-guard):",
       optimizedJobMatch
     );
 
@@ -1278,7 +1396,71 @@ for the same underlying skill.
     );
 
     // ==================================================
+    // NON-DEGRADATION GUARD
+    //
+    // IMPORTANT:
+    //
+    // The optimizer must NEVER make the final resume
+    // score worse than the original.
+    //
+    // The optimized scores above are calculated from the
+    // actual optimized resume text using the existing
+    // scoring functions (no score inflation happens here).
+    //
+    // If the AI-generated optimized resume genuinely
+    // produces a lower ATS score OR a lower Job Match
+    // score than the original, we reject the degraded
+    // optimization and fall back to the original resume,
+    // reusing the already-calculated original ATS result
+    // so the returned matched/missing keywords stay
+    // consistent with the reverted text.
+    // ==================================================
+
+    let optimizationReverted = false;
+
+    if (
+      optimizedATS < originalATS ||
+      optimizedJobMatch < originalJobMatch
+    ) {
+      optimizationReverted = true;
+
+      console.log(
+        "⛔ Optimization reduced the score — reverting to original resume."
+      );
+
+      console.log(
+        "   ATS:",
+        originalATS,
+        "->",
+        optimizedATS
+      );
+
+      console.log(
+        "   Job Match:",
+        originalJobMatch,
+        "->",
+        optimizedJobMatch
+      );
+
+      optimizedResumeText =
+        originalResumeText;
+
+      optimizedATSResult =
+        originalATSResult;
+
+      optimizedATS =
+        originalATS;
+
+      optimizedJobMatch =
+        originalJobMatch;
+    }
+
+    // ==================================================
     // CALCULATE IMPROVEMENTS
+    //
+    // When reverted, both improvements are forced to 0,
+    // since optimizedATS === originalATS and
+    // optimizedJobMatch === originalJobMatch.
     // ==================================================
 
     const atsImprovement =
@@ -1332,6 +1514,11 @@ for the same underlying skill.
     );
 
     console.log(
+      "Optimization reverted:",
+      optimizationReverted
+    );
+
+    console.log(
       "========================================"
     );
 
@@ -1370,6 +1557,18 @@ for the same underlying skill.
             ).values(),
           ]
         : [];
+
+    // If the AI-generated optimization was rejected for
+    // reducing the score, make that explicit to the user
+    // instead of silently showing unrelated AI improvement
+    // notes for text that is no longer being used.
+    if (optimizationReverted) {
+      improvementsMade.length = 0;
+
+      improvementsMade.push(
+        "The AI-generated optimization was reverted because it produced a lower ATS score or Job Match score than your original resume. Your original resume was kept unchanged."
+      );
+    }
 
     // ==================================================
     // NORMALIZE RECOMMENDED SKILLS
@@ -1474,6 +1673,12 @@ for the same underlying skill.
       atsImprovement,
 
       jobMatchImprovement,
+
+      // ----------------------------------------------
+      // NON-DEGRADATION GUARD STATUS
+      // ----------------------------------------------
+
+      optimizationReverted,
 
       // ----------------------------------------------
       // AI IMPROVEMENTS
