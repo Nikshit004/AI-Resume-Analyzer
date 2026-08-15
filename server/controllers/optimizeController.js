@@ -586,54 +586,36 @@ function calculateATSScore(
 //
 // IMPORTANT:
 //
-// Job match is NOT based on job title.
+// This MUST match the Job Match formula used by
+// analyzeController.js's calculateJobMatch() exactly,
+// so the optimizer scores the original and optimized
+// resume with the same methodology as /api/analyze.
 //
-// Technical skills are the primary signal.
-// Structure/relevance gives a smaller contribution.
+// Job Match = raw technical keyword match score.
+// No structure weighting is applied here.
 // ======================================================
 
 function calculateJobMatch(
   resumeText,
   jobDescription
 ) {
-  const keywordResult =
+  const result =
     calculateKeywordScore(
       resumeText,
       jobDescription
     );
 
-  const structureScore =
-    calculateStructureScore(
-      resumeText
-    );
-
-  // If there are no technical keywords,
-  // don't claim a perfect match.
   if (
-    !keywordResult.jobKeywords.length
+    !result.jobKeywords.length
   ) {
-    return Math.round(
-      structureScore * 0.5
-    );
+    return 50;
   }
-
-  /*
-   * Job Match:
-   *
-   * 80% technical skill match
-   * 20% resume quality
-   */
-
-  const score = Math.round(
-    keywordResult.score * 0.8 +
-      structureScore * 0.2
-  );
 
   return Math.max(
     0,
     Math.min(
       100,
-      score
+      result.score
     )
   );
 }
